@@ -7,7 +7,7 @@ on:
         description: "Package name of the target game/app"
         required: true
         type: string
-        default: "com.example.game"
+        default: "com.yuanl3.zugpshu"
       skip_cache:
         description: "Skip cache restoration (if experiencing cache errors)"
         required: false
