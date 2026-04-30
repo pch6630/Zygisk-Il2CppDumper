@@ -1,34 +1,36 @@
 #include <jni.h>
 #include <unistd.h>
 #include <android/log.h>
-#include <cstring>
+#include <string>
 #include <thread>
 #include "zygisk.hpp"
 #include "hack.h"
 #include "xdl.h"
 
-// 로그 정의
-#ifndef LOGI
+// 로그 태그 설정
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, "Zygisk-Hack", __VA_ARGS__)
-#endif
 
-// 데미지 배율 (6.0f = 6배)
+// 덤프 함수 선언 (외부 라이브러리 사용 시)
+extern void il2cpp_dump(const char* out_dir);
+
+// 데미지 배율 (6배)
 float damage_multiplier = 6.0f;
 
 // 실제 게임의 데미지 함수를 대신할 함수
-// 게임 구조에 따라 매개변수(void* instance 등)는 다를 수 있습니다.
 float (*old_GetDamage)(void* instance);
 float new_GetDamage(void* instance) {
     if (old_GetDamage) {
         float original = old_GetDamage(instance);
-        return original * damage_multiplier; // 여기서 6배 적용
+        return original * damage_multiplier; // 6배 적용
     }
     return 0.0f;
 }
 
-void hack_start(const char *game_data_dir) {
+void hack_start(const char* game_data_dir) {
     void *handle = nullptr;
-    // 게임 엔진 라이브러리가 로드될 때까지 대기
+    LOGI("게임 엔진 감지 대기 중...");
+
+    // libil2cpp.so가 로드될 때까지 최대 20초간 대기
     for (int i = 0; i < 20; i++) {
         handle = xdl_open("libil2cpp.so", 0);
         if (handle) break;
@@ -36,12 +38,16 @@ void hack_start(const char *game_data_dir) {
     }
 
     if (handle) {
-        LOGI("libil2cpp.so 감지 성공! 후킹을 시작합니다.");
+        LOGI("libil2cpp.so 감지 성공! 분석 및 수정을 시작합니다.");
+
+        // [중요] 자동 덤프 실행: 분석 파일을 생성합니다.
+        il2cpp_dump(game_data_dir);
+        LOGI("덤프 완료! 경로: %s/il2cpp", game_data_dir);
+
+        // [주의] 아래 0x123456 부분을 나중에 dump.cs에서 찾은 주소로 바꿔야 합니다.
+        // DobbyHook((void*)(xdl_addr(handle, "libil2cpp.so") + 0x123456), (void*)new_GetDamage, (void**)&old_GetDamage);
         
-        // 중요: 아래 0x123456 부분을 dump.cs에서 찾은 실제 Offset으로 바꿔야 합니다.
-        // 예: DobbyHook((void*)(libbase + 0x123456), (void*)new_GetDamage, (void**)&old_GetDamage);
-        
-        LOGI("데미지 6배 수정 완료");
+        LOGI("현재는 덤프 파일 생성 모드입니다. 주소를 찾으면 코드를 재수정하세요.");
     }
 }
 
