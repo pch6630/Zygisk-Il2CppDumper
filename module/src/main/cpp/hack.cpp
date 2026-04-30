@@ -5,7 +5,16 @@
 #include <cstring>
 #include "zygisk.hpp"
 #include "hack.h" // hack_prepare 함수 호출을 위해 필요
+#include <android/log.h> // 안드로이드 로그 헤더 추가
 
+// LOGI와 LOGE가 정의되어 있지 않다면 아래 내용을 추가합니다.
+#ifndef LOGI
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, "Zygisk", __VA_ARGS__)
+#endif
+
+#ifndef LOGE
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, "Zygisk", __VA_ARGS__)
+#endif
 using namespace zygisk;
 
 class MyModule : public ModuleBase {
