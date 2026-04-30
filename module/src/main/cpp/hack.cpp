@@ -3,53 +3,33 @@
 #include <sys/types.h>
 #include <android/log.h>
 #include <cstring>
+#include <string>
 #include "zygisk.hpp"
-#include "hack.h" // hack_prepare 함수 호출을 위해 필요
-#include <android/log.h> // 안드로이드 로그 헤더 추가
+#include "hack.h"
 
-// LOGI와 LOGE가 정의되어 있지 않다면 아래 내용을 추가합니다.
+// 로그 출력을 위한 정의
 #ifndef LOGI
-#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, "Zygisk", __VA_ARGS__)
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, "Zygisk-Hack", __VA_ARGS__)
 #endif
 
 #ifndef LOGE
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, "Zygisk", __VA_ARGS__)
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, "Zygisk-Hack", __VA_ARGS__)
 #endif
-using namespace zygisk;
 
-class MyModule : public ModuleBase {
-public:
-    void onLoad(Api* api, JNIEnv* env) override {
-        this->api = api;
-        this->env = env;
+// 중요: REGISTER_ZYGISK_MODULE(MyModule)이나 
+// class MyModule 정의는 main.cpp(또는 example.cpp)에만 있어야 합니다.
+// hack.cpp에는 실제 기능을 수행할 함수들만 작성합니다.
+
+void hack_prepare(const char *game_data_dir, void *data, size_t length) {
+    if (game_data_dir == nullptr) {
+        LOGE("게임 데이터 경로가 비어있습니다.");[cite: 2]
+        return;
     }
 
-    void preAppSpecialize(AppSpecializeArgs* args) override {
-        // 1. 현재 실행 중인 앱의 패키지명을 가져옴
-        const char* process = env->GetStringUTFChars(args->nice_name, nullptr);
-        
-        if (process != nullptr) {
-            // 2. 패키지명이 com.yuanl3.zugpshu 인지 확인[cite: 2]
-            if (strcmp(process, "com.yuanl3.zugpshu") == 0) {
-                LOGI("대상 게임 감지됨: %s", process);
+    LOGI("일꾼(hack.cpp) 작동 시작! 경로: %s", game_data_dir);[cite: 2]
 
-                // 3. 데이터 저장 경로 설정 (앱 전용 내부 경로)
-                const char* game_data_dir = "/data/user/0/com.yuanl3.zugpshu/files";
+    // 이곳에 libil2cpp.so를 찾거나 덤프하는 로직을 작성합니다.
+    // 기존에 가지고 계시던 덤프 로직(xdl_open 등)이 있다면 이 아래에 넣으시면 됩니다.
+}
 
-                // 4. hack.cpp의 hack_prepare 함수 호출
-                // 여기서 별도 스레드가 생성되어 libil2cpp.so를 찾기 시작합니다.
-                hack_prepare(game_data_dir, nullptr, 0);
-            }
-            
-            // 메모리 해제
-            env->ReleaseStringUTFChars(args->nice_name, process);
-        }
-    }
-
-private:
-    Api* api;
-    JNIEnv* env;
-};
-
-// Zygisk 모듈 등록
-REGISTER_ZYGISK_MODULE(MyModule)
+// 만약 hack_start 등 다른 함수가 hack.h에 정의되어 있다면 여기에 추가로 작성하세요.
